@@ -1,10 +1,11 @@
-import services, os, time, json
+import services, os, time, json, validations
 from dotenv import load_dotenv
 
 
 load_dotenv()
 
 KAFKA_RAW_TOPIC = os.getenv("KAFKA_TOPIC_RAW_ALERTS")
+REGIONS_FILE = "regions.geojson"
 
 def main():
     # Trying to subscribe to topic
@@ -28,16 +29,22 @@ def main():
                 # Case the message received successfully.
                 try:
                     dict_model = json.loads(msg.value())
-                    if not check_exists_msg(dict_model):
-                        # Case msg not in redis.
-                        import_to_redis(dict_model)
-                        # check_exists_msg(dict_model)
+                    if validations.validator(dict_model):
+                        # Case all of the properties are valid.
+                        if not check_exists_msg(dict_model):
+                            # Case msg not in redis.
+                            import_to_redis(dict_model)
+                            polygon_area = services.get_region(REGIONS_FILE, dict_model["lon"], dict_model["lat"])
+                        else:
+                            # Case msg already in redis we are skipping the msg.
+                            continue
                     else:
-                        # Case msg already in redis we are skipping the msg.
-                        pass
+                        # Case not all the properties are valid.
+                        continue
+
                 except json.decoder.JSONDecodeError:
                     # Check if the json message is corrupt.
-                    pass
+                    continue
     except KeyboardInterrupt:
         print("System shutdown...")
         pass
@@ -65,15 +72,15 @@ def check_exists_msg(msg:dict):
         redis_value = get_from_redis(redis_key)
 
         # Check if the important fields are the same.
+        print(redis_value)
         check_lon = msg["lon"] == redis_value["lon"]
         check_lat = msg["lat"] == redis_value["lat"]
-        check_time = msg["timestamp"] == redis_value["timestamp"]
         check_title = msg["title"] == redis_value["title"]
 
-        if check_lon and check_lat and check_time and check_title:
-            return False
+        if check_lon and check_lat and check_title:
+            return True
 
-    return True
+    return False
 
 
 if __name__ == "__main__":
