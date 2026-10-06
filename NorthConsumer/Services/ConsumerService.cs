@@ -65,14 +65,12 @@ namespace NorthConsumer.Services
 
             consumer.ReceivedAsync += async (mod, arg) =>
             {
-                System.Console.WriteLine("90");
+
                 try
                 {
                     var body = arg.Body.ToArray();
                     var routing = arg.RoutingKey;
-                    System.Console.WriteLine("4");
                     await msgHandler(body);
-                    System.Console.WriteLine("5");
 
                     await _channel.BasicAckAsync(
                         deliveryTag: arg.DeliveryTag,

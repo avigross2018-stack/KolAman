@@ -3,28 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using NorthConsumer.Data;
+using MongoDB.Driver;
 using NorthConsumer.Models;
 
 namespace NorthConsumer.Repo
 {
     public class NorthRepo
     {
-        private readonly NorthDbContext _northDb;
-        public NorthRepo(NorthDbContext northDb)
+        private readonly IMongoCollection<Alert> _collection;
+        public NorthRepo(IMongoCollection<Alert> collection)
         {
-            _northDb = northDb;
+            _collection = collection;
         }
 
-        public async Task Createdatbase()
+        public async Task CreateAsync(Alert alert)
         {
-            await _northDb.Database.MigrateAsync();
-        }
-
-        public async Task AddAlert(Alert alert)
-        {
-            await _northDb.Alerts.AddAsync(alert);
-            await _northDb.SaveChangesAsync();
+            await _collection.InsertOneAsync(alert);
         }
     }
 }

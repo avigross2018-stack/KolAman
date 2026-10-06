@@ -18,6 +18,7 @@ REDIS_PORT = os.getenv("REDIS_PORT")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
 RABBIT_HOST = os.getenv("RABBITMQ_HOST")
+RABBIT_PORT = os.getenv("RABBIT_PORT")
 RABBIT_USER = os.getenv("RABBITMQ_DEFAULT_USER")
 RABBIT_PASSWORD = os.getenv("RABBITMQ_DEFAULT_PASS")
 
@@ -48,7 +49,13 @@ def get_region(file_path:str, lon:float, lat:str) -> str:
 
 
 # ==== Rabbit Service ===
-rabbit_con = pika.BlockingConnection(pika.ConnectionParameters(RABBIT_HOST))
+rabbit_con = pika.BlockingConnection(
+    pika.ConnectionParameters(
+        host=RABBIT_HOST,
+        port=RABBIT_PORT,
+        credentials=pika.PlainCredentials(RABBIT_USER, RABBIT_PASSWORD),
+    )
+)
 channel = rabbit_con.channel()
 
 

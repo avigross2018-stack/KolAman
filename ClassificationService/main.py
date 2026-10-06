@@ -24,10 +24,10 @@ log = get_logger()
 def main():
     elastic_client = services.client
 
-    try:
-        elastic_client.indices.create(index=ELASTIC_INDEX_NAME)
-    except RequestError:
-        pass
+    # try:
+    #     # elastic_client.indices.create(index=ELASTIC_INDEX_NAME)
+    # except RequestError:
+    #     pass
     # Trying to subscribe to topic
     while True:
         try:
@@ -58,13 +58,13 @@ def main():
                                 REGIONS_FILE, dict_model["lon"], dict_model["lat"]
                             )
 
-                            queue_name = f"queue-{polygon_area}"
-                            exchange_name = "alert-exchange"
+                            queue_name = f"queue_{polygon_area}"
+                            exchange_name = "alert_exchange"
 
                             services.channel.exchange_declare(
                                 exchange_name, exchange_type="direct", durable=True
                             )
-                            services.channel.queue_declare(queue_name, durable=True)
+                            services.channel.queue_declare(queue_name, durable=True, exclusive=False)
                             services.channel.queue_bind(
                                 queue_name, exchange_name, routing_key=polygon_area
                             )
@@ -73,10 +73,12 @@ def main():
                             services.channel.basic_publish(
                                 exchange_name, routing_key=polygon_area, body=body_msg
                             )
-                            log.info("send message successfully to %s", polygon_area)
-                            elastic_client.index(
-                                index=ELASTIC_INDEX_NAME, id=dict_model["alert_id"], document=dict_model
-                            )
+                            # print(services.channel.is_open)
+                            
+                            # log.info("send message successfully to %s", polygon_area)
+                            # elastic_client.index(
+                            #     index=ELASTIC_INDEX_NAME, id=dict_model["alert_id"], document=dict_model
+                            # )
                         else:
                             # Case msg already in redis we are skipping the msg.
                             continue
@@ -111,6 +113,10 @@ def get_from_redis(key: str):
 def check_exists_msg(msg: dict):
     # Checking if the nessage exists in redis and if the fields the same.
     key = msg["alert_id"]
+    search_key = services.redis.get(key)
+    if search_key is not None:
+        return True
+        
     keys_in_redis = services.redis.keys("*")
     for redis_key in keys_in_redis:
         redis_value = get_from_redis(redis_key)

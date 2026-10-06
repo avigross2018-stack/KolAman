@@ -1,10 +1,12 @@
 ﻿
+using System.Runtime.InteropServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.VisualBasic;
-using NorthConsumer.Data;
+using MongoDB.Driver;
+using NorthConsumer.Models;
 using NorthConsumer.Repo;
 using NorthConsumer.Services;
 using RabbitMQ.Client;
@@ -16,9 +18,14 @@ var rabbitPort = builder.Configuration["RABBITMQ_PORT"] ?? throw new ArgumentExc
 var rabbitUser = builder.Configuration["RABBITMQ_DEFAULT_USER"] ?? throw new ArgumentException("missing env var");
 var rabbitPass = builder.Configuration["RABBITMQ_DEFAULT_PASS"] ?? throw new ArgumentException("missing env var");
 
-var sqlConnection = builder.Configuration["MYSQL_CONNECTION"];
-// var connection = builder.Configuration.GetConnectionString(sqlConnectionString);
+var mongoHost = builder.Configuration["MONGO_HOST"];
+var mongoPort = builder.Configuration["MONGO_PORT"];
+var mongoUser = builder.Configuration["MONGO_USER"];
+var mongoPass = builder.Configuration["MONGO_PASSWORD"];
+var mongoDatabase = builder.Configuration["MONGO_DATABASE"];
 
+
+var mongoConnection = $"mongodb://{mongoUser}:{mongoPass}@{mongoHost}:{mongoPort}/?auth=admin";
 builder.Services.AddSingleton<ConnectionFactory>(_ =>
 {
     return new ConnectionFactory
@@ -30,12 +37,17 @@ builder.Services.AddSingleton<ConnectionFactory>(_ =>
     };
 });
 
+builder.Services.AddSingleton<IMongoCollection<Alert>>(_ =>
+{
+    var client = new MongoClient(mongoConnection);
+    var database = client.GetDatabase(mongoDatabase);
+    return database.GetCollection<Alert>("north-collection");
+});
 
 
 
-
-builder.Services.AddScoped<NorthRepo>();
-builder.Services.AddScoped<ConsumerService>();
+builder.Services.AddSingleton<NorthRepo>();
+builder.Services.AddSingleton<ConsumerService>();
 builder.Services.AddHostedService<WorkerService>();
 
 var host = builder.Build();

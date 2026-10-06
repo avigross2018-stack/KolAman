@@ -22,7 +22,6 @@ namespace NorthConsumer.Services
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await _northRepo.Createdatbase();
             while (!stoppingToken.IsCancellationRequested)
             {
                 await _consumer.ConsumeMessage(stoppingToken, MessageHandler, "queue_NORTH", "alert_exchange", "NORTH");
@@ -34,7 +33,7 @@ namespace NorthConsumer.Services
             var message = Encoding.UTF8.GetString(bytes);
 
             var objModel = JsonSerializer.Deserialize<Alert>(message);
-            await _northRepo.AddAlert(objModel);
+            await _northRepo.CreateAsync(objModel);
             await Task.CompletedTask;
         }
     }
