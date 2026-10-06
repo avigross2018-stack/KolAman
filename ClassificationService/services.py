@@ -5,6 +5,7 @@ import redis as rd
 import geopandas as gpd
 from shapely.geometry import Point
 import pika
+from elasticsearch8 import Elasticsearch
 
 
 load_dotenv()
@@ -19,6 +20,8 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 RABBIT_HOST = os.getenv("RABBITMQ_HOST")
 RABBIT_USER = os.getenv("RABBITMQ_DEFAULT_USER")
 RABBIT_PASSWORD = os.getenv("RABBITMQ_DEFAULT_PASS")
+
+ELASTIC_BASE_URL = os.getenv("ELASTIC_BASE_URL")
 
 # ==== Kafka Service ====
 consumer_config = {
@@ -47,3 +50,7 @@ def get_region(file_path:str, lon:float, lat:str) -> str:
 # ==== Rabbit Service ===
 rabbit_con = pika.BlockingConnection(pika.ConnectionParameters(RABBIT_HOST))
 channel = rabbit_con.channel()
+
+
+# ==== elastic service ===
+client = Elasticsearch(ELASTIC_BASE_URL)
